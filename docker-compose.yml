@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  node:
+    container_name: sellematics-extension-node
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    volumes:
+      - .:/srv/app
+      - /srv/app/docker/

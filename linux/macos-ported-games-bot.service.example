@@ -1,0 +1,11 @@
+[Unit]
+Description=MacOS Ported Games Bot
+
+[Service]
+User=<enter username>
+WorkingDirectory=<enter directory path>
+ExecStart=/usr/bin/node src/index.mjs
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
