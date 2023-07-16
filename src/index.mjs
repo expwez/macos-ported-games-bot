@@ -41,7 +41,6 @@ bot.onText(new RegExp('/changes'), changesCommand(bot));
 bot.onText(new RegExp('/games'), gamesCommand(bot));
 
 bot.on('callback_query', gamesPaginationHandler(bot));
-
 const recordChanges = async (games) => {
     const newGames = [];
     const updatedGames = [];
@@ -50,20 +49,24 @@ const recordChanges = async (games) => {
         const gameInDb = await gamesDb.getItem((g) => g.title === game.title);
 
         if (gameInDb) {
-            const latestRating = getGameLatestRating(gameInDb);
-            if (latestRating !== game.rating) {
-                gameInDb.ratings.push({ rating: game.rating, addedAt: new Date() });
-                updatedGames.push({...gameInDb, oldRating: latestRating});
+            gameInDb.ratings.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+            const currentRating = gameInDb.ratings[0].rating;
 
-                log(`Updated game ${gameInDb.title} from ${latestRating} to ${game.rating}`);
+            if (currentRating !== game.rating) {
+                gameInDb.ratings.push({ rating: game.rating, addedAt: new Date() });
+                const { rating, ...updatedGame } = gameInDb;
+                updatedGames.push(updatedGame);
+
+                log(`Updated game ${gameInDb.title} from ${currentRating} to ${game.rating}`);
             }
         } else {
             const newGame = {
                 ...game,
                 ratings: [{ rating: game.rating, addedAt: new Date() }]
             };
-            newGames.push(newGame);
-            
+            const { rating, ...gameWithoutRating } = newGame;
+            newGames.push(gameWithoutRating);
+
             log(`Added new game ${newGame.title} with rating ${newGame.rating}`);
         }
     }
@@ -76,18 +79,21 @@ const recordChanges = async (games) => {
         await gamesDb.createOrUpdate(updatedGames, 'title');
     }
 
-    return {newGames, updatedGames};
+    return { newGames, updatedGames };
 };
 
 const sendGamesUpdatesNotification = async (chats, newGames, updatedRatings) => {
     let message = '';
 
     for (let game of newGames) {
-        message += formatGameMessage(game, `Unknown → ${game.rating}`);
+        game.ratings.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+        message += formatGameMessage(game, `Unknown → ${game.ratings[0].rating}`);
     }
 
     for (let game of updatedRatings) {
-        message += formatGameMessage(game, `${game.oldRating} → ${game.rating}`);
+        game.ratings.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+        const oldRating = game.ratings.length > 1 ? game.ratings[1].rating : "Unknown";
+        message += formatGameMessage(game, `${oldRating} → ${game.ratings[0].rating}`);
     }
 
     if (message) {
