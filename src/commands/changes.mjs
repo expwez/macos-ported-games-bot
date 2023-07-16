@@ -1,4 +1,4 @@
-import { gamesDb } from "../databases.mjs";
+import { gamesDb, getGameLatestRating } from "../databases.mjs";
 import { escapeCharacters } from "../util.mjs";
 
 const formatChangeMessage = (change) => {
@@ -20,7 +20,7 @@ const formatChangesMessage = (recentChanges, newGames) => {
 
   for (let game of recentChanges) {
     const previousRating = game.ratings[game.ratings.length - 2]?.rating || 'Unknown';
-    const latestRating = game.ratings[game.ratings.length - 1].rating;
+    const latestRating = getGameLatestRating(game);
     message += `🎮 [*${escapeCharacters(game.title)}*](${escapeCharacters(game.link)})\n${previousRating} → ${latestRating}\n\n`;
   }
 
