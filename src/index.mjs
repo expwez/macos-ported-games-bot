@@ -22,13 +22,8 @@ const addChatIdToDataStore = async (msg) => {
 };
 
 const removeChatIdFromDataStore = async (msg) => {
-    const chats = await chatsDb.getItems();
-    const chatIds = chats.map(chat => chat.telegramId);
-    const chatIndex = chatIds.indexOf(msg.chat.id);
-    if (chatIndex !== -1) {
-        await chatsDb.removeItem((item) => item.telegramId === msg.chat.id);
-        log(`Removed chat ${msg.chat.id}`);
-    }
+    await chatsDb.removeItem((item) => item.telegramId === msg.chat.id);
+    log(`Removed chat ${msg.chat.id}`);
 };
 
 bot.on('message', addChatIdToDataStore);
@@ -41,6 +36,39 @@ bot.onText(new RegExp('/changes'), changesCommand(bot));
 bot.onText(new RegExp('/games'), gamesCommand(bot));
 
 bot.on('callback_query', gamesPaginationHandler(bot));
+
+const addNewGame = (game) => {
+    const newGame = {
+        title: game.title,
+        link: game.link,
+        ratings: [{ rating: game.rating, addedAt: new Date() }]
+    };
+
+    log(`Added new game ${newGame.title} with rating ${newGame.rating}`);
+    return newGame;
+};
+
+const updateGame = (gameInDb, newRating) => {
+    gameInDb.ratings.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    const currentRating = gameInDb.ratings[0].rating;
+
+    if (currentRating !== newRating) {
+        gameInDb.ratings.push({ rating: newRating, addedAt: new Date() });
+
+        const updatedGame = {
+            title: gameInDb.title,
+            link: gameInDb.link,
+            ratings: gameInDb.ratings
+        };
+        
+        log(`Updated game ${updatedGame.title} from ${currentRating} to ${newRating}`);
+        return updatedGame;
+    }
+
+    return null;
+};
+
+
 const recordChanges = async (games) => {
     const newGames = [];
     const updatedGames = [];
@@ -49,25 +77,12 @@ const recordChanges = async (games) => {
         const gameInDb = await gamesDb.getItem((g) => g.title === game.title);
 
         if (gameInDb) {
-            gameInDb.ratings.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
-            const currentRating = gameInDb.ratings[0].rating;
-
-            if (currentRating !== game.rating) {
-                gameInDb.ratings.push({ rating: game.rating, addedAt: new Date() });
-                const { rating, ...updatedGame } = gameInDb;
+            const updatedGame = updateGame(gameInDb, game.rating);
+            if (updatedGame) {
                 updatedGames.push(updatedGame);
-
-                log(`Updated game ${gameInDb.title} from ${currentRating} to ${game.rating}`);
             }
         } else {
-            const newGame = {
-                ...game,
-                ratings: [{ rating: game.rating, addedAt: new Date() }]
-            };
-            const { rating, ...gameWithoutRating } = newGame;
-            newGames.push(gameWithoutRating);
-
-            log(`Added new game ${newGame.title} with rating ${newGame.rating}`);
+            newGames.push(addNewGame(game));
         }
     }
 
