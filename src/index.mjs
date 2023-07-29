@@ -1,9 +1,8 @@
 import cron from 'node-cron';
 import dotenv from 'dotenv';
-import { escapeCharacters } from './util.mjs';
 import { getGamesList } from './lib/appleGamingWiki.mjs';
 import { log } from './log.mjs';
-import { chatsDb, gamesDb, getGameLatestRating } from './databases.mjs';
+import { chatsDb, gamesDb } from './databases.mjs';
 import { gamesCommand, gamesPaginationHandler } from './commands/games.mjs';
 import changesCommand from './commands/changes.mjs';
 import { ResilientTelegramBot } from './lib/resilientTelegramBot.mjs';
@@ -114,7 +113,7 @@ const sendGamesUpdatesNotification = async (chats, newGames, updatedRatings) => 
     if (message) {
         for (let chatId of chats) {
             try {
-                await bot.sendMessage(chatId, message, { parse_mode: "MarkdownV2" });
+                await bot.sendMessage(chatId, message, { parse_mode: "HTML" });
             } catch (error) {
                 if (error.response && error.response.statusCode === 403) {
                     console.log(`Removing chatId ${chatId} from the database`);
@@ -126,7 +125,7 @@ const sendGamesUpdatesNotification = async (chats, newGames, updatedRatings) => 
 };
 
 const formatGameMessage = (game, ratingChange) => {
-    return `🎮 [*${escapeCharacters(game.title)}*](${escapeCharacters(game.link)})\n${ratingChange}\n\n`;
+    return `🎮 <a href="${game.link}"><b>${game.title}</b></a>\n${ratingChange}\n\n`;
 };
 
 const fetchNewGames = async () => {

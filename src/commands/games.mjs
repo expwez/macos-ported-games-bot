@@ -1,15 +1,13 @@
 import { gamesDb } from "../databases.mjs";
-import { log } from "../log.mjs";
-import { escapeCharacters } from "../util.mjs";
 
 const PAGE_SIZE = 10;
 const MIN_TITLE_LENGTH = 40;
 
 const formatGameMessage = (game) => {
-    const title = escapeCharacters(game.title);
+    const title = game.title;
     const spacer = title.length < MIN_TITLE_LENGTH ? ' '.repeat(MIN_TITLE_LENGTH - title.length): '';
 
-    return `🎮 *[${escapeCharacters(game.title)}](${escapeCharacters(game.link)})*${spacer}\nRating: *${escapeCharacters(game.rating)}*\n`;
+    return `🎮 <a href="${game.link}"><b>${game.title}</b></a>${spacer}\nRating: <b>${game.rating}</b>\n`;
 };
 
 export const gamesCommand = (bot) => async (msg) => {
@@ -46,11 +44,11 @@ const sendOrUpdateGamesList = async (bot, chatId, messageId = null, page = 1) =>
         await bot.editMessageText(message, { 
             chat_id: chatId, 
             message_id: messageId, 
-            parse_mode: 'MarkdownV2',
+            parse_mode: 'HTML',
             reply_markup: keyboard
         });
     } else {
-        await bot.sendMessage(chatId, message, { parse_mode: 'MarkdownV2', reply_markup: keyboard });
+        await bot.sendMessage(chatId, message, { parse_mode: 'HTML', reply_markup: keyboard });
     }
 };
 
