@@ -4,10 +4,13 @@ const PAGE_SIZE = 10;
 const MIN_TITLE_LENGTH = 40;
 
 const formatGameMessage = (game) => {
+    game.ratings.sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+    const latestRating = game.ratings[0].rating;
+
     const title = game.title;
     const spacer = title.length < MIN_TITLE_LENGTH ? ' '.repeat(MIN_TITLE_LENGTH - title.length): '';
 
-    return `🎮 <a href="${game.link}"><b>${game.title}</b></a>${spacer}\nRating: <b>${game.rating}</b>\n`;
+    return `🎮 <a href="${game.link}"><b>${game.title}</b></a>${spacer}\nRating: <b>${latestRating}</b>\n`;
 };
 
 export const gamesCommand = (bot) => async (msg) => {
